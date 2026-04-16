@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -101,18 +103,22 @@ def apply_app_styling() -> None:
     st.markdown(APP_CSS, unsafe_allow_html=True)
 
 
-def render_sidebar() -> object:
+def render_sidebar(model_path: Path) -> None:
     with st.sidebar:
-        st.markdown("## 🎵 Spotify Segmentation")
+        st.markdown("## Spotify Segmentation")
         st.markdown("---")
-        pkl_file = st.file_uploader(
-            "📦 Upload **model.pkl**",
-            type=["pkl"],
-            help="Run train_and_save.py first to generate this file",
+        if model_path.exists():
+            st.success(f"Auto-detected `{model_path.name}`")
+        else:
+            st.warning(f"`{model_path.name}` not found")
+
+        st.markdown("---")
+        st.caption(
+            "If missing, generate once:\n"
+            "```\n"
+            "python train_and_save.py --data prisha_datset.csv\n"
+            "```"
         )
-        st.markdown("---")
-        st.caption("Generate pickle:\n```\npython train_and_save.py \\\n  --data prisha_datset.csv\n```")
-    return pkl_file
 
 
 def render_hero() -> None:
@@ -129,22 +135,27 @@ def render_hero() -> None:
     )
 
 
-def render_quick_start() -> None:
-    st.info("👈 Upload **model.pkl** from the sidebar to get started!", icon="🎵")
+def render_quick_start(model_path: Path, file_missing: bool = False) -> None:
+    if file_missing:
+        st.error(
+            f"`{model_path.name}` is missing in the project folder. "
+            "Create it once using the command below, then rerun the app."
+        )
+
+    st.info("The app loads `model.pkl` automatically when it is present.")
     st.markdown(
         """
         <div class="card">
-        <h3>🚀 Quick Start</h3>
-        <p><b>Step 1</b> — Train the model (run once):</p>
+        <h3>Quick Start</h3>
+        <p><b>Step 1</b> - Train the model (run once):</p>
         <code>python train_and_save.py --data prisha_datset.csv</code>
         <br><br>
-        <p><b>Step 2</b> — Upload the generated <code>model.pkl</code> using the sidebar.</p>
-        <p><b>Step 3</b> — Explore EDA, clusters, and get recommendations instantly!</p>
+        <p><b>Step 2</b> - Run the app: <code>streamlit run app.py</code>.</p>
+        <p><b>Step 3</b> - App auto-loads <code>model.pkl</code> and shows results.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
 
 def render_recommendations(recs: pd.DataFrame, heading: str) -> None:
     st.markdown(f"### {heading}")
@@ -487,3 +498,4 @@ def render_insights_tab(model: ModelBundle) -> None:
         file_name="spotify_clustered.csv",
         mime="text/csv",
     )
+

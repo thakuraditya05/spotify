@@ -4,6 +4,7 @@ import io
 import pickle
 from dataclasses import dataclass
 from typing import Any
+from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
@@ -78,8 +79,27 @@ def validate_bundle(raw: dict[str, Any]) -> ModelBundle:
 
 @st.cache_resource(show_spinner=False)
 def load_model_bundle(pkl_bytes: bytes) -> ModelBundle:
-    raw = pickle.load(io.BytesIO(pkl_bytes))
+    with _string_dtype_pickle_compat():
+        raw = pickle.load(io.BytesIO(pkl_bytes))
     return validate_bundle(raw)
+
+
+@contextmanager
+def _string_dtype_pickle_compat():
+    """
+    Compatibility shim for pickles created with pandas StringDtype signatures
+    that include a second positional argument (for example, `na_value`).
+    """
+    original_init = pd.StringDtype.__init__
+
+    def compat_init(self, storage=None, na_value=None):
+        return original_init(self, storage=storage)
+
+    pd.StringDtype.__init__ = compat_init
+    try:
+        yield
+    finally:
+        pd.StringDtype.__init__ = original_init
 
 
 def predict_cluster(model: ModelBundle, feature_values: list[float]) -> int:

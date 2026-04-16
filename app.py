@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 
 import streamlit as st
 
@@ -20,37 +21,42 @@ from utils import load_model_bundle
 
 warnings.filterwarnings("ignore")
 
+MODEL_PATH = Path(__file__).resolve().with_name("model.pkl")
+
 st.set_page_config(
-    page_title="🎵 Spotify Segmentation",
-    page_icon="🎵",
+    page_title="Spotify Segmentation",
+    page_icon=":musical_note:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 apply_app_styling()
-pkl_file = render_sidebar()
+render_sidebar(MODEL_PATH)
 render_hero()
 
-if pkl_file is None:
-    render_quick_start()
+if not MODEL_PATH.exists():
+    render_quick_start(MODEL_PATH, file_missing=True)
     st.stop()
 
 try:
-    with st.spinner("Loading model…"):
-        model = load_model_bundle(pkl_file.read())
+    with st.spinner("Loading model..."):
+        model = load_model_bundle(MODEL_PATH.read_bytes())
 except Exception as exc:
     st.error(f"Failed to load model.pkl: {exc}")
     st.stop()
 
-st.success(f"✅ Model loaded — **K={model.k}** clusters · **{len(model.df):,} songs**")
+st.success(
+    f"Model loaded from `{MODEL_PATH.name}` - "
+    f"**K={model.k}** clusters, **{len(model.df):,} songs**"
+)
 
 tabs = st.tabs([
-    "📊 Overview",
-    "📈 EDA",
-    "🗺️ Clusters",
-    "🔍 Predict by Index",
-    "🎛️ Predict by Features",
-    "💡 Insights",
+    "Overview",
+    "EDA",
+    "Clusters",
+    "Predict by Index",
+    "Predict by Features",
+    "Insights",
 ])
 
 with tabs[0]:
